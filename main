@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>To do list</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        :root { --bg-color: #f0f2f5; --card-bg: #ffffff; --point-color: #4a90e2; }
+        body { font-family: 'Pretendard', sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; display: flex; justify-content: center; }
+        
+        /* 전체 컨테이너 */
+        .container { width: 100%; max-width: 450px; min-height: 100vh; background: var(--card-bg); display: flex; flex-direction: column; position: relative; }
+        
+        /* 상단 네비게이션 */
+        .nav-header { background: #2c3e50; color: white; padding: 25px 20px; text-align: center; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-size: 1.2rem; }
+        .date-display { font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
+        .day-label { font-size: 0.95rem; opacity: 0.8; display: block; margin-top: 4px; }
+
+        /* 리스트 영역: 남은 공간을 다 차지하도록 설정 */
+        .content-body { padding: 20px; flex-grow: 1; padding-bottom: 100px; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #f2f2f2; }
+        
+        .item-left { display: flex; align-items: center; flex-grow: 1; cursor: pointer; }
+        input[type="checkbox"] { width: 24px; height: 24px; margin-right: 15px; accent-color: #4a90e2; cursor: pointer; }
+        
+        .badge { font-size: 0.75rem; font-weight: bold; padding: 4px 10px; border-radius: 6px; margin-right: 10px; color: white; min-width: 75px; text-align: center; white-space: nowrap; }
+        .badge-fixed { background: #e67e22; }
+        .badge-study { background: #3498db; }
+        
+        .text { font-size: 1.05rem; color: #2c3e50; font-weight: 500; }
+        .checked .text, .checked .badge { text-decoration: line-through; color: #bdc3c7; opacity: 0.6; }
+
+        .del-btn { background: #fff1f0; border: 1px solid #ffa39e; color: #f5222d; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.85rem; }
+        
+        /* 하단 고정 리셋 버튼 */
+        .footer { padding: 20px; background: #fff; border-top: 1px solid #eee; position: sticky; bottom: 0; }
+        .reset-btn { width: 100%; padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 12px; cursor: pointer; color: #888; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="nav-header">
+        <button class="nav-btn" onclick="changeDate(-1)">◀</button>
+        <div>
+            <span id="current-date" class="date-display">2026. 04. 12</span>
+            <span id="current-day" class="day-label">일요일</span>
+        </div>
+        <button class="nav-btn" onclick="changeDate(1)">▶</button>
+    </div>
+
+    <div class="content-body">
+        <ul id="todo-list">
+            </ul>
+    </div>
+
+    <div class="footer">
+        <button class="reset-btn" onclick="resetAllData()">데이터 초기화 (전체 복구)</button>
+    </div>
+</div>
+
+<script>
+    let displayDate = new Date('2026-04-12');
+    let userProgress = JSON.parse(localStorage.getItem('seungyun_schedule')) || {};
+
+    const fixedData = {
+        "월요일": [{ time: "19:30-22:00", task: "영어학원" }],
+        "화요일": [{ time: "17:00-22:00", task: "수학학원" }],
+        "수요일": [{ time: "16:00", task: "국어 과제 체크" }, { time: "자율", task: "수학 숙제" }],
+        "목요일": [{ time: "17:00-22:00", task: "수학학원" }],
+        "토요일": [{ time: "17:00-19:00", task: "국어학원" }],
+        "일요일": [{ time: "16:00-19:00", task: "과학학원" }, { time: "자율", task: "수학 숙제" }]
+    };
+
+    const flexibleList = [
+        "엠베스트 내신 수학 매일풀기", "영어 인강 수강 및 문제 정리", "과학 숙제 풀기",
+        "사회 엠베스트 인강 수강", "사회 자습서 문제 풀기", "역사 자습서 문제 풀기",
+        "과학 엠베스트 인강 수강", "국어학원 과제", "엠베스트 국어 인강 수강"
+    ];
+
+    function getDayKey(date) {
+        return date.getFullYear() + "-" + (date.getMonth() + 1).toString().padStart(2, '0') + "-" + date.getDate().toString().padStart(2, '0');
+    }
+
+    function render() {
+        const dateKey = getDayKey(displayDate);
+        const dayName = displayDate.toLocaleDateString('ko-KR', { weekday: 'long' });
+        
+        document.getElementById('current-date').innerText = displayDate.toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        document.getElementById('current-day').innerText = dayName;
+
+        const listContainer = document.getElementById('todo-list');
+        listContainer.innerHTML = '';
+
+        if (!userProgress[dateKey]) {
+            userProgress[dateKey] = { checked: [], deleted: [] };
+        }
+
+        const currentData = userProgress[dateKey];
+
+        // 1. 고정 항목
+        if (fixedData[dayName]) {
+            fixedData[dayName].forEach(item => {
+                if (!currentData.deleted.includes(item.task)) {
+                    createItem(item.task, item.time, 'badge-fixed', false, dateKey);
+                }
+            });
+        }
+
+        // 2. 선택 항목
+        flexibleList.forEach(task => {
+            const isMath = task.includes("수학");
+            const isTueThu = (dayName === "화요일" || dayName === "목요일");
+            
+            if (!(isMath && isTueThu) && !currentData.deleted.includes(task)) {
+                createItem(task, "학습", 'badge-study', true, dateKey);
+            }
+        });
+        
+        window.scrollTo(0, 0); // 날짜 변경 시 상단으로 스크롤
+    }
+
+    function createItem(task, label, badgeClass, isDeletable, dateKey) {
+        const isChecked = userProgress[dateKey].checked.includes(task);
+        const li = document.createElement('li');
+        if (isChecked) li.className = 'checked';
+
+        li.innerHTML = `
+            <label class="item-left">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${dateKey}', '${task}', this)">
+                <span class="badge ${badgeClass}">${label}</span>
+                <span class="text">${task}</span>
+            </label>
+            ${isDeletable ? `<button class="del-btn" onclick="deleteTask('${dateKey}', '${task}')">삭제</button>` : ''}
+        `;
+        listContainer.appendChild(li); // 전역 listContainer 대신 직접 참조
+    }
+
+    // script 내부 listContainer 변수 에러 방지를 위해 render 내부에 정의하거나 아래처럼 수정
+    function createItem(task, label, badgeClass, isDeletable, dateKey) {
+        const isChecked = userProgress[dateKey].checked.includes(task);
+        const li = document.createElement('li');
+        if (isChecked) li.className = 'checked';
+
+        li.innerHTML = `
+            <label class="item-left">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${dateKey}', '${task}', this)">
+                <span class="badge ${badgeClass}">${label}</span>
+                <span class="text">${task}</span>
+            </label>
+            ${isDeletable ? `<button class="del-btn" onclick="deleteTask('${dateKey}', '${task}')">삭제</button>` : ''}
+        `;
+        document.getElementById('todo-list').appendChild(li);
+    }
+
+    function toggleCheck(dateKey, task, cb) {
+        const list = userProgress[dateKey].checked;
+        if (cb.checked) {
+            if (!list.includes(task)) list.push(task);
+            cb.closest('li').classList.add('checked');
+        } else {
+            const index = list.indexOf(task);
+            if (index > -1) list.splice(index, 1);
+            cb.closest('li').classList.remove('checked');
+        }
+        save();
+    }
+
+    function deleteTask(dateKey, task) {
+        if (confirm("이 항목을 오늘 계획에서 삭제할까요?")) {
+            userProgress[dateKey].deleted.push(task);
+            save();
+            render();
+        }
+    }
+
+    function save() {
+        localStorage.setItem('seungyun_schedule', JSON.stringify(userProgress));
+    }
+
+    function changeDate(offset) {
+        displayDate.setDate(displayDate.getDate() + offset);
+        render();
+    }
+
+    function resetAllData() {
+        if (confirm("모든 기록을 초기화할까요?")) {
+            localStorage.removeItem('seungyun_schedule');
+            userProgress = {};
+            render();
+        }
+    }
+
+    render();
+</script>
+
+</body>
+</html>
