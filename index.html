@@ -2,41 +2,46 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>To do list</title>
+    <title>승윤이의 스마트 스케줄러</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
         :root { --bg-color: #f0f2f5; --card-bg: #ffffff; --point-color: #4a90e2; }
         body { font-family: 'Pretendard', sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; display: flex; justify-content: center; }
         
-        /* 전체 컨테이너 */
         .container { width: 100%; max-width: 450px; min-height: 100vh; background: var(--card-bg); display: flex; flex-direction: column; position: relative; }
         
-        /* 상단 네비게이션 */
+        /* 헤더 */
         .nav-header { background: #2c3e50; color: white; padding: 25px 20px; text-align: center; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
-        .nav-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-size: 1.2rem; }
-        .date-display { font-size: 1.3rem; font-weight: 700; letter-spacing: 1px; }
-        .day-label { font-size: 0.95rem; opacity: 0.8; display: block; margin-top: 4px; }
+        .nav-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 10px 18px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; }
+        .date-display { font-size: 1.25rem; font-weight: 700; }
+        .day-label { font-size: 0.9rem; opacity: 0.8; display: block; margin-top: 4px; }
 
-        /* 리스트 영역: 남은 공간을 다 차지하도록 설정 */
-        .content-body { padding: 20px; flex-grow: 1; padding-bottom: 100px; }
+        /* 항목 추가 입력창 */
+        .add-section { padding: 20px; background: #f8f9fa; border-bottom: 1px solid #eee; display: flex; gap: 10px; }
+        .add-input { flex-grow: 1; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem; outline: none; }
+        .add-input:focus { border-color: var(--point-color); }
+        .add-btn { background: var(--point-color); color: white; border: none; padding: 0 15px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
+        /* 리스트 영역 */
+        .content-body { padding: 0 20px 100px 20px; flex-grow: 1; }
         ul { list-style: none; padding: 0; margin: 0; }
         li { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; border-bottom: 1px solid #f2f2f2; }
         
         .item-left { display: flex; align-items: center; flex-grow: 1; cursor: pointer; }
-        input[type="checkbox"] { width: 24px; height: 24px; margin-right: 15px; accent-color: #4a90e2; cursor: pointer; }
+        input[type="checkbox"] { width: 22px; height: 22px; margin-right: 15px; accent-color: var(--point-color); }
         
-        .badge { font-size: 0.75rem; font-weight: bold; padding: 4px 10px; border-radius: 6px; margin-right: 10px; color: white; min-width: 75px; text-align: center; white-space: nowrap; }
+        .badge { font-size: 0.75rem; font-weight: bold; padding: 4px 10px; border-radius: 6px; margin-right: 10px; color: white; min-width: 70px; text-align: center; white-space: nowrap; }
         .badge-fixed { background: #e67e22; }
         .badge-study { background: #3498db; }
+        .badge-user { background: #1abc9c; } /* 직접 추가한 항목용 색상 */
         
-        .text { font-size: 1.05rem; color: #2c3e50; font-weight: 500; }
+        .text { font-size: 1rem; color: #2c3e50; font-weight: 500; }
         .checked .text, .checked .badge { text-decoration: line-through; color: #bdc3c7; opacity: 0.6; }
 
-        .del-btn { background: #fff1f0; border: 1px solid #ffa39e; color: #f5222d; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.85rem; }
+        .del-btn { background: #fff1f0; border: 1px solid #ffa39e; color: #f5222d; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 0.8rem; }
         
-        /* 하단 고정 리셋 버튼 */
         .footer { padding: 20px; background: #fff; border-top: 1px solid #eee; position: sticky; bottom: 0; }
-        .reset-btn { width: 100%; padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 12px; cursor: pointer; color: #888; font-size: 0.9rem; }
+        .reset-btn { width: 100%; padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 12px; cursor: pointer; color: #888; font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -45,25 +50,29 @@
     <div class="nav-header">
         <button class="nav-btn" onclick="changeDate(-1)">◀</button>
         <div>
-            <span id="current-date" class="date-display">2026. 04. 12</span>
-            <span id="current-day" class="day-label">일요일</span>
+            <span id="current-date" class="date-display"></span>
+            <span id="current-day" class="day-label"></span>
         </div>
         <button class="nav-btn" onclick="changeDate(1)">▶</button>
     </div>
 
+    <div class="add-section">
+        <input type="text" id="new-task-input" class="add-input" placeholder="새로운 할 일 입력..." onkeypress="if(event.keyCode==13) addUserTask()">
+        <button class="add-btn" onclick="addUserTask()">추가</button>
+    </div>
+
     <div class="content-body">
-        <ul id="todo-list">
-            </ul>
+        <ul id="todo-list"></ul>
     </div>
 
     <div class="footer">
-        <button class="reset-btn" onclick="resetAllData()">데이터 초기화 (전체 복구)</button>
+        <button class="reset-btn" onclick="resetAllData()">기록 전체 초기화</button>
     </div>
 </div>
 
 <script>
     let displayDate = new Date('2026-04-12');
-    let userProgress = JSON.parse(localStorage.getItem('seungyun_schedule')) || {};
+    let userProgress = JSON.parse(localStorage.getItem('seungyun_schedule_v2')) || {};
 
     const fixedData = {
         "월요일": [{ time: "19:30-22:00", task: "영어학원" }],
@@ -76,8 +85,7 @@
 
     const flexibleList = [
         "엠베스트 내신 수학 매일풀기", "영어 인강 수강 및 문제 정리", "과학 숙제 풀기",
-        "사회 엠베스트 인강 수강", "사회 자습서 문제 풀기", "역사 자습서 문제 풀기",
-        "과학 엠베스트 인강 수강", "국어학원 과제", "엠베스트 국어 인강 수강"
+        "국어 과제", "엠베스트 국어 인강 수강"
     ];
 
     function getDayKey(date) {
@@ -95,7 +103,7 @@
         listContainer.innerHTML = '';
 
         if (!userProgress[dateKey]) {
-            userProgress[dateKey] = { checked: [], deleted: [] };
+            userProgress[dateKey] = { checked: [], deleted: [], custom: [] };
         }
 
         const currentData = userProgress[dateKey];
@@ -109,36 +117,25 @@
             });
         }
 
-        // 2. 선택 항목
+        // 2. 직접 추가한 항목 (커스텀)
+        if (currentData.custom) {
+            currentData.custom.forEach(task => {
+                if (!currentData.deleted.includes(task)) {
+                    createItem(task, "개인", 'badge-user', true, dateKey);
+                }
+            });
+        }
+
+        // 3. 기본 선택 항목
         flexibleList.forEach(task => {
             const isMath = task.includes("수학");
             const isTueThu = (dayName === "화요일" || dayName === "목요일");
-            
             if (!(isMath && isTueThu) && !currentData.deleted.includes(task)) {
                 createItem(task, "학습", 'badge-study', true, dateKey);
             }
         });
-        
-        window.scrollTo(0, 0); // 날짜 변경 시 상단으로 스크롤
     }
 
-    function createItem(task, label, badgeClass, isDeletable, dateKey) {
-        const isChecked = userProgress[dateKey].checked.includes(task);
-        const li = document.createElement('li');
-        if (isChecked) li.className = 'checked';
-
-        li.innerHTML = `
-            <label class="item-left">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCheck('${dateKey}', '${task}', this)">
-                <span class="badge ${badgeClass}">${label}</span>
-                <span class="text">${task}</span>
-            </label>
-            ${isDeletable ? `<button class="del-btn" onclick="deleteTask('${dateKey}', '${task}')">삭제</button>` : ''}
-        `;
-        listContainer.appendChild(li); // 전역 listContainer 대신 직접 참조
-    }
-
-    // script 내부 listContainer 변수 에러 방지를 위해 render 내부에 정의하거나 아래처럼 수정
     function createItem(task, label, badgeClass, isDeletable, dateKey) {
         const isChecked = userProgress[dateKey].checked.includes(task);
         const li = document.createElement('li');
@@ -153,6 +150,22 @@
             ${isDeletable ? `<button class="del-btn" onclick="deleteTask('${dateKey}', '${task}')">삭제</button>` : ''}
         `;
         document.getElementById('todo-list').appendChild(li);
+    }
+
+    function addUserTask() {
+        const input = document.getElementById('new-task-input');
+        const task = input.value.trim();
+        const dateKey = getDayKey(displayDate);
+
+        if (task) {
+            if (!userProgress[dateKey]) userProgress[dateKey] = { checked: [], deleted: [], custom: [] };
+            if (!userProgress[dateKey].custom) userProgress[dateKey].custom = [];
+            
+            userProgress[dateKey].custom.push(task);
+            save();
+            render();
+            input.value = '';
+        }
     }
 
     function toggleCheck(dateKey, task, cb) {
@@ -177,7 +190,7 @@
     }
 
     function save() {
-        localStorage.setItem('seungyun_schedule', JSON.stringify(userProgress));
+        localStorage.setItem('seungyun_schedule_v2', JSON.stringify(userProgress));
     }
 
     function changeDate(offset) {
@@ -187,7 +200,7 @@
 
     function resetAllData() {
         if (confirm("모든 기록을 초기화할까요?")) {
-            localStorage.removeItem('seungyun_schedule');
+            localStorage.removeItem('seungyun_schedule_v2');
             userProgress = {};
             render();
         }
